@@ -1,0 +1,23 @@
+---
+title: "What Stats Affect Soccer the Most"
+author: "Eric Seltzer"
+date: "2024-02-19"
+categories: [finance, code, analysis]
+---
+
+```{r}
+library(tidyverse)
+library(tidyquant)
+library(ggrepel)
+library(here)
+theme_set(theme_minimal())
+soccer <- read_csv(here("data/soccer.csv"))
+```
+
+# Introduction
+
+
+```{r}
+
+```
+
