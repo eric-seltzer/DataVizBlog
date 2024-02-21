@@ -1,23 +1,152 @@
 ---
-title: "What Stats Affect Soccer the Most"
+title: "Is there bias towards the Big 6?"
 author: "Eric Seltzer"
-date: "2024-02-19"
-categories: [finance, code, analysis]
+date: "2024-02-21"
+categories: [sports, code, analysis]
 ---
 
+# Introduction
+While scrolling through the Tidy Tuesday data, I found a data set of the Premier League Matches from 2021-2022. In this data, they included team goals and results for both the first half and the second half. They also included the referee, team shots, team shots on target, team fouls, team yellow cards, and team red cards. When thinking about the variables that this data had, I thought of the question is there bias towards the "big 6". For those of you who don't follow the Premier League, the big 6 consists of Arsenal, Liverpool, Manchester United, Manchester City, Chelsea, and Tottenham. My goal was to see if there was a notable difference in the number of fouls and cards produced for the big six vs the other 14 teams. 
+
 ```{r}
+#| output: false
 library(tidyverse)
-library(tidyquant)
-library(ggrepel)
 library(here)
+library(knitr)
 theme_set(theme_minimal())
 soccer <- read_csv(here("data/soccer.csv"))
 ```
 
-# Introduction
+# Data Cleaning
+My first step was to get rid of the halftime data, the shots data, the goals data, the winners data, and the corners data because I wouldn't be needing it for my analysis. I chose to keep the referee variable and cards variables just in case I want to use it later.I also wanted to make the variable names easier to interpret.
+```{r}
+soccerTidy <-
+  soccer |>
+  select(-starts_with("HT")) |>
+  select(-(4:6)) |>
+  select(-(5:8)) |>
+  select(-(7:8)) |>
+  rename('HomeFouls' = HF) |>
+  rename('AwayFouls' = AF) |>
+  rename('HomeYellow' = HY) |>
+  rename('AwayYellow' = AY) |>
+  rename('HomeRed' = HR) |>
+  rename('AwayRed' = AR)
+```
+Below is a sample of what the data now looks like.
+```{r}
+kable(head(soccerTidy))
+```
+# Preparing for Visuals
+Next I needed to make two different data frames, a home and away for the big 6 which could then be joined so I could compare how many fouls they got when versing non big 6 opponents.
 
+Side Note: All of this was a huge pain, and there is likely a much easier way to do this. Below is all the code of making data frames and joining them together until I have something that works for showing the distribution.
+```{r}
+big6_Home <-
+  soccerTidy |>
+  filter(HomeTeam %in% c('Arsenal', 'Liverpool', 'Man United', 'Man City', 'Chelsea', 'Tottenham')) |>
+    filter(!(AwayTeam %in% c('Arsenal', 'Liverpool', 'Man United', 'Man City', 'Chelsea', 'Tottenham')))
+
+big6_Away <-
+  soccerTidy |>
+  filter(AwayTeam %in% c('Arsenal', 'Liverpool', 'Man United', 'Man City', 'Chelsea', 'Tottenham')) |>
+  filter(!(HomeTeam %in% c('Arsenal', 'Liverpool', 'Man United', 'Man City', 'Chelsea', 'Tottenham')))
+```
 
 ```{r}
+big6_fouls <-
+  big6_Home |>
+    group_by(HomeTeam) |>
+  mutate('Big_6' = 'Yes') |>
+  select(HomeTeam, HomeFouls, Big_6)
 
+opp_fouls <-
+  big6_Home |>
+    group_by(HomeTeam) |>
+  mutate('Big_6' = 'No') |>
+  select(HomeTeam, AwayFouls, Big_6)
+
+home_fouls <-
+  bind_rows(big6_fouls, opp_fouls) |>
+  pivot_longer(cols = c('HomeFouls', 'AwayFouls'),
+               names_to = 'Location',
+               values_to = 'Fouls') |>
+  select(-(Location)) |>
+  na.omit() |>
+  mutate(Location = 'Home')
 ```
+
+```{r}
+Abig6_fouls <-
+  big6_Away |>
+    group_by(AwayTeam) |>
+  mutate('Big_6' = 'Yes') |>
+  select(AwayTeam, AwayFouls, Big_6)
+
+Aopp_fouls <-
+  big6_Away |>
+    group_by(AwayTeam) |>
+  mutate('Big_6' = 'No') |>
+  select(AwayTeam, HomeFouls, Big_6)
+
+away_fouls <-
+  bind_rows(Abig6_fouls, Aopp_fouls) |>
+  pivot_longer(cols = c('HomeFouls', 'AwayFouls'),
+               names_to = 'Location',
+               values_to = 'Fouls') |>
+  select(-(Location)) |>
+  na.omit() |>
+  mutate(Location = 'Away') |>
+  rename('HomeTeam' = AwayTeam)
+```
+
+```{r}
+fouls_df <-
+  bind_rows(home_fouls, away_fouls) |>
+  mutate(Big_6 = as_factor(Big_6))
+```
+
+# Plot 1
+```{r}
+ggplot(data = fouls_df,
+       aes(x = HomeTeam,
+           y = Fouls,
+           fill = Big_6)) +
+  geom_boxplot(position = position_dodge(width = 1)) +
+  facet_wrap(vars(Location)) +
+  theme(axis.title = element_text(size = 14,),
+        strip.text = element_text(size = 12),
+        axis.title.y = element_blank(),
+        plot.title = element_text(size = 16,
+                                  hjust = 0),
+        panel.spacing = unit(2, 'lines')) +
+  labs(title = 'Distribution of Fouls in Big 6 Games Both Home and Away',
+       caption = '(based on data from Evan Gower via Kaggle)',
+       y = 'Number of Fouls',
+       fill = 'In Big 6?') +
+  coord_flip() +
+  scale_fill_brewer(palette = 'Pastel2')
+```
+This plot shows the distribution of fouls for all the Big 6 teams both home and away as well as their opponents. When I had this idea, I was expecting to see a somewhat lower distribution for all of the Big 6 teams relative to their opponent, but I was surprised. For the most part, the fouls seam relatively even with the biggest advantage appearing to be Arsenal in home games. Below I created a table to show the average number of fouls per game for each Big 6 team.
+# Table 1
+```{r}
+tb6 <-
+fouls_df |>
+  filter(Big_6 == 'Yes') |>
+  group_by(HomeTeam) |>
+  summarise('Fouls per Game for Big 6 Teams' = mean(Fouls))
+
+tb <-
+  fouls_df |>
+  filter(Big_6 == 'No') |>
+  group_by(HomeTeam) |>
+  summarise('Fouls per Game for Opponents' = mean(Fouls)) |>
+  select(-HomeTeam)
+
+tb <-
+  bind_cols(tb6, tb)
+
+kable(tb)
+```
+This table shows that only a few Big 6 teams average less than their opponents, those being Arsenal, Man City, and Tottenham. I would say that for the most part, this shows that there isn't bias towards the Big 6.
 
