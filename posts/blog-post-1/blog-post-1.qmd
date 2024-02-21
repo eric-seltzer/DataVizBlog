@@ -20,7 +20,7 @@ prices <- read_csv(here("data/prices.csv"))
 ```
 
 
-Introduction:
+# Introduction:
 
 After finding a data set showing the stock prices of big tech companies, I decided I wanted to investigate to see if there were any correlations to find trends in how their prices perform. This dataset began in 2010 and went to January of 2023 so I decided to cut down the time frame to the most recent five years. I also chose to use the six companies in this dataset with the highest observed closing prices. This allows for less clutter in my visualizations.
 
@@ -132,9 +132,9 @@ pricesMA |>
             alpha = .2)
 ```
 
-Conclusion:
+# Conclusion:
 
 In this plot, I plotted the moving averages against the closing prices from Plot 1 except this time I faceted by each company in order to compare the companies individually. This leads us to our answer to the original question of if there is a trend or indicator of the price decrease. Typically, when a short-term EMA crosses above the long-term EMA, this is a signal that price might continue to move up. On the opposite hand, this means that if short-term EMA crosses below long-term EMA, price might continue to move down. In every company shown, up until the closing price drop, the short-term was above the long-term. Once the gap between them closed, and short-term came closer to long-term, the closing prices began to decrease. In some of the companies, the short-term even dipped below the long term. In conclusion, using moving averages can be a good indicator for these companies prices going down, but likely isn't the root of the scenario. That can be left to many other more complex factors.
 
-Connections to Class:
+# Connections to Class:
 I used many techniques we used in class. The three main ones were changing theme elements, faceting, and using a color scale. 
