@@ -1,7 +1,7 @@
 ---
 title: "Predicting if a NBA Team Will Make the Playoffs"
 author: "Eric Seltzer"
-date: "2024-03-05"
+date: "2024-03-06"
 categories: [sports, code, analysis, data wrangling]
 ---
 # Intoduction
@@ -169,8 +169,8 @@ kable(tidy(playoffs_mod))
 grid <-
   team_stats_tidy |>
   data_grid(
-    Deff = seq_range(Deff, n = 50),
-    FG_pct = seq_range(FG_pct, n = 10),
+    Deff = seq_range(Deff, n = 100),
+    FG_pct = seq_range(FG_pct, n = 100),
     Conference = c("West", "East"),
     over100 = c("Yes", "No")
   )
