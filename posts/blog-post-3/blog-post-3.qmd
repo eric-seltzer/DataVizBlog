@@ -1,5 +1,5 @@
 ---
-title: "Predicting if a NBA team has a winning percentage"
+title: "Predicting if a NBA Team Will Make the Playoffs"
 author: "Eric Seltzer"
 date: "2024-03-05"
 categories: [sports, code, analysis, data wrangling]
