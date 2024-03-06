@@ -58,13 +58,17 @@ pricesNew |>
   scale_x_date(date_minor_breaks = "6 months",
                date_breaks = "1 year",
                date_labels = "%b %y") +
+  theme_minimal() +
   theme(axis.text.x = element_text(angle = 45,
                                    hjust = 1,
                                    vjust = 1),
         plot.title = element_text(size = 16,
                                   hjust = 0),
         axis.title.x = element_blank(),
-        axis.title.y = element_text(size = 14))
+        axis.title.y = element_text(size = 14),
+        panel.background = element_rect(fill = "ivory"),
+        plot.background = element_rect(fill = "ivory"),
+        plot.caption = element_text(hjust = 1.35))
 ```
 
 My first plot shows the change in price for these six companies and it is easy to see that around January 2022, they all began to take a hit in their price. This begged the question, were there any indicators that this was going to happen? In order to attack this, I decided to investigate the short- and long-term moving averages for each stock, specifically the exponential moving average. An exponential moving average calculates the average of the prices using a weighting multiplier that assigns more weight to later data. In general, when a short-term EMA crosses a long-term EMA, this signifies either a price increase or decrease.
@@ -110,7 +114,7 @@ pricesMA |>
   labs(y = "Dollars ($)",
        colour = "Moving Averages",
        title = "Short- and Long-Term EMA Compared to Closing Prices, 2010-2023",
-       caption = "(based on data from Yahoo Finance via Kaggle)/nEMAs are calculated from library(tidyquant)") +
+       caption = "(based on data from Yahoo Finance via Kaggle) EMAs are calculated from library(tidyquant)") +
   theme(axis.text.x = element_text(angle = 45,
                                    hjust = 1,
                                    vjust = 1),
@@ -122,8 +126,11 @@ pricesMA |>
         strip.text.x = element_text(color = "black", 
                                     face = "bold"),
         strip.background = element_rect(colour = "black",
-                                        fill = "white"),
-        legend.title = element_blank()) +
+                                        fill = "ivory"),
+        legend.title = element_blank(),
+        panel.background = element_rect(fill = "ivory"),
+        plot.background = element_rect(fill = "ivory"),
+        plot.caption = element_text(hjust = 1)) +
   geom_line(data = prices_select,
             aes(x = date,
                 y = close),

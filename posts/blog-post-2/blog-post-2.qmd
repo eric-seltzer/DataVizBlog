@@ -117,18 +117,25 @@ fouls_df <-
 # Plot 1
 
 ```{r}
+#|fig-width: 12
 ggplot(data = fouls_df,
        aes(x = HomeTeam,
            y = Fouls,
            fill = Big_6)) +
   geom_boxplot(position = position_dodge(width = 1)) +
   facet_wrap(vars(Location)) +
+  theme_minimal() +
   theme(axis.title = element_text(size = 14,),
         strip.text = element_text(size = 12),
+        strip.background = element_rect(colour = "black",
+                                        fill = "ivory"),
         axis.title.y = element_blank(),
         plot.title = element_text(size = 16,
                                   hjust = 0),
-        panel.spacing = unit(2, 'lines')) +
+        panel.spacing = unit(2, 'lines'),
+        panel.background = element_rect(fill = "ivory"),
+        plot.background = element_rect(fill = "ivory"),
+        plot.caption = element_text(hjust = 1.33)) +
   labs(title = 'Distribution of Fouls in Big 6 Games Both Home and Away',
        caption = '(based on data from Evan Gower via Kaggle)',
        y = 'Number of Fouls',

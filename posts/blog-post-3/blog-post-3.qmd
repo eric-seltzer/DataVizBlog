@@ -53,7 +53,11 @@ My first step in this project is to clean and format this data in a way so that 
 | Eff      | NBA Efficiency Recap                                                       |
 | Deff     | Efficiency Recap Difference                                                |
 | Year     | Year of the NBA Season                                                     |
+Side Note: 
 
+NBA Efficiency Recap = ((Points + Rebounds + Assists + Steals + Blocks) - ((Field Goal Attempts - Field Goals Made) + (Free Throw Attempts - Free Throws Made) + Turnovers))
+
+Efficiency Recap Difference = Efficiency Recap - Opponent's Efficiency Recap
 
 # Data Cleaning
 ```{r}
@@ -136,8 +140,7 @@ team_stats_tidy <-
 team_stats_tidy <-
   team_stats_tidy |>
   mutate(Conference = if_else(Team %in% c("Celtics", "Bucks", "Cavaliers", "Knicks", "76ers", "Magic", "Heat", "Pacers", "Bulls", "Hawks", "Nets", "Raptors", "Hornets", "Wizards", "Pistons"), "East", "West"),
-         Playoffs = if_else(G > 82, 1, 0)) |>
-  mutate(over100 = factor(if_else(Pts >= 100, "Yes", "No")))
+         Playoffs = if_else(G > 82, 1, 0))
 ```
 
 # Cleaned Data Set
@@ -146,7 +149,7 @@ Here is an example of what the data now looks like
 kable(head(team_stats_tidy))
 ```
 
-# Building a model
+# Building A Model
 I decided to use some of the metrics in the data set to predict whether a team would make the playoffs or not. I made a response variables Playoffs by using a condition of if a team played more than 82 games or not in season.
 
 In order to make sure that this model isn't testing using data that knows the answer, we should get rid of both of the No and G variables. We also don't care about what team it is so we should get rid of the team factor.
@@ -156,10 +159,11 @@ team_stats_tidy <-
   select(-(c("No","G", "Team")))
 ```
 
-As this is a blog for data visualization, I am only going to choose three predictors that were all found to be relatively significant in a model using all the predictors. One of these is qualitative to demonstrate more visualization. The predictors are Deff, Conference, and FG_pct. Shown below is my model with their coefficients and p values.
+I am only going to choose two predictors that were found to be relatively significant in a model using all the predictors. One is Conference which will allow me to compare between the East and the West and the other is Deff. As mentioned above, Deff factors in most other metrics vs their opponents. Shown below is my model with their coefficients and p values.
 
 ```{r}
-playoffs_mod <- glm(Playoffs ~ Deff + Conference + FG_pct,
+playoffs_mod <- 
+  glm(Playoffs ~ Deff + Conference,
                     data = team_stats_tidy,
                     family = 'binomial')
 kable(tidy(playoffs_mod))
@@ -170,25 +174,22 @@ grid <-
   team_stats_tidy |>
   data_grid(
     Deff = seq_range(Deff, n = 60),
-    FG_pct = median(FG_pct),
-    Conference = c("West", "East"),
+    Conference = c("West", "East")
   )
 ```
 
 ```{r}
-aug_stats <-
+aug <-
   augment(playoffs_mod,
           newdata = grid,
           se_fit = TRUE)
-aug_stats
 ```
 
 Next I need to convert the .fitted values to predicted probabilities. Currently they are showing the predicted log odds.
 ```{r}
-aug_stats <-
-  aug_stats |>
+aug <-
+  aug |>
   mutate(.predprob = (exp(.fitted) / (1 + exp(.fitted))))
-aug_stats
 ```
 
 For my visualization I plan on using the geom_rug feature, so I need to make two separate data frames with teams that made the playoffs and teams that didn't.
@@ -205,12 +206,12 @@ stats_nplayoffs <-
 # Figure 1
 ```{r}
 #|fig-width: 12
-aug_stats|>
+aug |>
   ggplot(aes(x = Deff,
              y = .predprob)) +
   geom_line(aes(colour = Conference),
             linewidth = 1.2,
-            alpha = 0.8) +
+            alpha = 0.7) +
   scale_colour_viridis_d() +
   geom_rug(data = stats_playoffs,
            sides = 't',
@@ -243,7 +244,7 @@ aug_stats|>
 ```
 
 # Conclusion
-This plot shows the differences in the probability of a team to make the playoffs dependent on their efficiency recap rating, their median field goal percentage, and their conference. What we can see here is that for a team in the Eastern Conference, they need a lower efficiency recap rating to have an over .5 probability of making the playoffs. This can imply that typically over all the seasons this data has been collected, it is easier to make the playoffs in the Eastern Conference.
+This plot shows the differences in the probability of a team to make the playoffs dependent on their efficiency recap rating and their conference. Shown in this plot is that for a team in the Eastern Conference, they need a lower efficiency recap rating to have over a 0.5 probability of making the playoffs. One could imply from the 1997-98 season until the 2021-22 season, it is has been easier to make the playoffs in the Eastern Conference.
 
 # Connections to Class
-In this blog, I used many tactics from class. One being the data visualization aspects of using faceting, and grouping. I put the geom_rug on as well and am visualizing my predicted probabilities for each observation. I also used our technique of creating a logistic regression model. 
+In this blog, I used many tactics from class. One being the data visualization aspects of faceting, and grouping. I put the geom_rug on as well and am visualizing my predicted probabilities for each observation. I also used our technique of creating a logistic regression model. 
