@@ -23,11 +23,37 @@ library(knitr)
 team_stats <- read_csv(here('data/NBA_Team_Stats.csv'))
 ```
 Here is an example of what the data set looks like directly from the source.
+
+# Original Data Set
 ```{r}
 kable(head(team_stats))
 ```
 
-My first step in this project is to clean and format this data in a way that I can work with it in the way I want too. As well, below is a screenshot of what all the variable names mean.
+My first step in this project is to clean and format this data in a way so that I can work with it how I want too. Below is a table showing what all the variable names mean.
+
+# Variable Explanations
+| Variable | Description                                                                |
+|----------|----------------------------------------------------------------------------|
+| No       | End of Season Ranking (1 winning the Finals)                               |
+| Team     | NBA Team Name                                                              |
+| G        | Games Played                                                               |
+| Min      | Average Minutes Per Game                                                   |
+| Pts      | Average Points Per Game                                                    |
+| Reb      | Average Rebounds Per Game                                                  |
+| Ast      | Average Assists Per Game                                                   |
+| Stl      | Average Steals Per Game                                                    |
+| Blk      | Average Blocks Per Game                                                    |
+| To       | Average Turnovers Per Game                                                 |
+| Pf       | Average Fouls Per Game                                                     |
+| Dreb     | Average Defensive Rebounds Per Game                                        |
+| Oreb     | Average Offensive Rebounds Per Game                                        |
+| Fgm-a    | Average Field Goals Made Per Game - Average Field Goals Attempted Per Game |
+| 3gm-a    | Average 3 Pointers Made Per Game - Average 3 Pointers Attempted Per Game   |
+| Ftm-a    | Average Free Throws Made Per Game - Average Free Throws Attempted Per Game |
+| Eff      | NBA Efficiency Recap                                                       |
+| Deff     | Efficiency Recap Difference                                                |
+| Year     | Year of the NBA Season                                                     |
+
 
 # Data Cleaning
 ```{r}
@@ -114,13 +140,14 @@ team_stats_tidy <-
   mutate(over100 = factor(if_else(Pts >= 100, "Yes", "No")))
 ```
 
+# Cleaned Data Set
 Here is an example of what the data now looks like
 ```{r}
 kable(head(team_stats_tidy))
 ```
 
 # Building a model
-I decided to use some of the metrics in the data set to predict whether a team would make the playoffs or not. I made a response variables Playoffs by using a condition of if a team played more than 82 games or not in season. 
+I decided to use some of the metrics in the data set to predict whether a team would make the playoffs or not. I made a response variables Playoffs by using a condition of if a team played more than 82 games or not in season. I also made another qualitative variable in over100 which shows whether a team averaged over 100 points or not for that season. This makes the visualization aspect more fun to do.
 
 In order to make sure that this model isn't testing using data that knows the answer, we should get rid of both of the No and G variables. We also don't care about what team it is so we should get rid of the team factor.
 ```{r}
@@ -129,15 +156,7 @@ team_stats_tidy <-
   select(-(c("No","G", "Team")))
 ```
 
-```{r}
-playoffs_mod <-
-  glm(Playoffs ~ ., 
-      data = team_stats_tidy,
-      family = 'binomial')
-summary(playoffs_mod)
-```
-
-As this is a blog for data visualization, I am going to choose some significant predictors to make it so it can be visualized with two of them being qualitative predictors to demonstrate more visualization. Here this is Deff, Conference, FG_pct, and over100. Shown below is my model with their coefficients and p values.
+As this is a blog for data visualization, I am only going to choose four predictors that were all found to be relatively significant in a model using all the predictors. Two of these are qualitative to demonstrate more visualization. The predictors are Deff, Conference, FG_pct, and over100. Shown below is my model with their coefficients and p values.
 
 ```{r}
 playoffs_mod <- glm(Playoffs ~ Deff + Conference + FG_pct + over100,
@@ -164,7 +183,7 @@ aug_stats <-
 aug_stats
 ```
 
-Next I need to convert the .fitted values to predicted probabilities.
+Next I need to convert the .fitted values to predicted probabilities. Currently they are showing the predicted log odds.
 ```{r}
 aug_stats <-
   aug_stats |>
@@ -172,6 +191,7 @@ aug_stats <-
 aug_stats
 ```
 
+For my visualization I plan on using the geom_rug feature, so I need to make two separate data frames with teams that made the playoffs and teams that didn't.
 ```{r}
 stats_playoffs <-
   team_stats_tidy |>
@@ -222,7 +242,7 @@ aug_stats|>
 ```
 
 # Conclusion
-This plot shows the differences in the probability of a team to make the playoffs dependent on their defensive efficiency rating, their field goal percentage, their conference, and if they averaged over 100 points or not. What we can see here is that for a team in the Eastern conference, they need a lower defensive efficiency to have an over .5 probability of making the playoffs. As well, a team's probability of making the playoffs is higher if they averaged over 100 points.
+This plot shows the differences in the probability of a team to make the playoffs dependent on their efficiency difference, their field goal percentage, their conference, and if they averaged over 100 points or not. What we can see here is that for a team in the Eastern conference, they need a lower efficiency difference to have an over .5 probability of making the playoffs. As well, a team's probability of making the playoffs is higher if they averaged over 100 points.
 
 # Connections to Class
 In this blog, I used many tactics from class. One being the data visualization aspects of using faceting, and grouping. I put the geom_rug on as well and am visualizing my predicted probabilities for each observation. I also used our technique of creating a logistic regression model. 
