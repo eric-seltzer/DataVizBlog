@@ -841,16 +841,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="building-a-model" class="level1">
 <h1>Building a model</h1>
-<p>I decided to use some of the metrics in the data set to predict whether a team would make the playoffs or not. I made a response variables Playoffs by using a condition of if a team played more than 82 games or not in season. I also made another qualitative variable in over100 which shows whether a team averaged over 100 points or not for that season. This makes the visualization aspect more fun to do.</p>
+<p>I decided to use some of the metrics in the data set to predict whether a team would make the playoffs or not. I made a response variables Playoffs by using a condition of if a team played more than 82 games or not in season.</p>
 <p>In order to make sure that this model isn’t testing using data that knows the answer, we should get rid of both of the No and G variables. We also don’t care about what team it is so we should get rid of the team factor.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>team_stats_tidy <span class="ot">&lt;-</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  team_stats_tidy <span class="sc">|&gt;</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>(<span class="fu">c</span>(<span class="st">"No"</span>,<span class="st">"G"</span>, <span class="st">"Team"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>As this is a blog for data visualization, I am only going to choose four predictors that were all found to be relatively significant in a model using all the predictors. Two of these are qualitative to demonstrate more visualization. The predictors are Deff, Conference, FG_pct, and over100. Shown below is my model with their coefficients and p values.</p>
+<p>As this is a blog for data visualization, I am only going to choose three predictors that were all found to be relatively significant in a model using all the predictors. One of these is qualitative to demonstrate more visualization. The predictors are Deff, Conference, and FG_pct. Shown below is my model with their coefficients and p values.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>playoffs_mod <span class="ot">&lt;-</span> <span class="fu">glm</span>(Playoffs <span class="sc">~</span> Deff <span class="sc">+</span> Conference <span class="sc">+</span> FG_pct <span class="sc">+</span> over100,</span>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>playoffs_mod <span class="ot">&lt;-</span> <span class="fu">glm</span>(Playoffs <span class="sc">~</span> Deff <span class="sc">+</span> Conference <span class="sc">+</span> FG_pct,</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> team_stats_tidy,</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="st">'binomial'</span>)</span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">tidy</span>(playoffs_mod))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -868,38 +868,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">(Intercept)</td>
-<td style="text-align: right;">5.1090840</td>
-<td style="text-align: right;">4.2254638</td>
-<td style="text-align: right;">1.209118</td>
-<td style="text-align: right;">0.2266175</td>
+<td style="text-align: right;">0.4539997</td>
+<td style="text-align: right;">3.7403799</td>
+<td style="text-align: right;">0.1213780</td>
+<td style="text-align: right;">0.9033917</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Deff</td>
-<td style="text-align: right;">0.2737298</td>
-<td style="text-align: right;">0.0214107</td>
-<td style="text-align: right;">12.784727</td>
+<td style="text-align: right;">0.2665841</td>
+<td style="text-align: right;">0.0209194</td>
+<td style="text-align: right;">12.7433723</td>
 <td style="text-align: right;">0.0000000</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">ConferenceWest</td>
-<td style="text-align: right;">-0.7893214</td>
-<td style="text-align: right;">0.2255191</td>
-<td style="text-align: right;">-3.500020</td>
-<td style="text-align: right;">0.0004652</td>
+<td style="text-align: right;">-0.7424358</td>
+<td style="text-align: right;">0.2228549</td>
+<td style="text-align: right;">-3.3314764</td>
+<td style="text-align: right;">0.0008639</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">FG_pct</td>
-<td style="text-align: right;">-0.1124503</td>
-<td style="text-align: right;">0.0948899</td>
-<td style="text-align: right;">-1.185061</td>
-<td style="text-align: right;">0.2359933</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">over100Yes</td>
-<td style="text-align: right;">0.5922806</td>
-<td style="text-align: right;">0.2436075</td>
-<td style="text-align: right;">2.431291</td>
-<td style="text-align: right;">0.0150451</td>
+<td style="text-align: right;">-0.0040242</td>
+<td style="text-align: right;">0.0831379</td>
+<td style="text-align: right;">-0.0484033</td>
+<td style="text-align: right;">0.9613948</td>
 </tr>
 </tbody>
 </table>
@@ -909,33 +902,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">&lt;-</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  team_stats_tidy <span class="sc">|&gt;</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data_grid</span>(</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">Deff =</span> <span class="fu">seq_range</span>(Deff, <span class="at">n =</span> <span class="dv">100</span>),</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">FG_pct =</span> <span class="fu">seq_range</span>(FG_pct, <span class="at">n =</span> <span class="dv">100</span>),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">Deff =</span> <span class="fu">seq_range</span>(Deff, <span class="at">n =</span> <span class="dv">60</span>),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">FG_pct =</span> <span class="fu">median</span>(FG_pct),</span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">Conference =</span> <span class="fu">c</span>(<span class="st">"West"</span>, <span class="st">"East"</span>),</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">over100 =</span> <span class="fu">c</span>(<span class="st">"Yes"</span>, <span class="st">"No"</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>aug_stats <span class="ot">&lt;-</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>(playoffs_mod,</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">se_fit =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>aug_stats</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">newdata =</span> grid,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">se_fit =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>aug_stats</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 725 × 12
-   Playoffs  Deff Conference FG_pct over100 .fitted .se.fit .resid    .hat
-      &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;fct&gt;     &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;
- 1        1  17.5 East         44.9 No         4.85   0.416  0.125 0.00133
- 2        1  17.5 West         48.3 No         3.68   0.410  0.223 0.00405
- 3        1  13.6 West         46.6 No         2.80   0.304  0.343 0.00497
- 4        1  13.2 West         48   Yes        3.13   0.301  0.293 0.00365
- 5        1  13.1 West         46.8 No         2.64   0.302  0.371 0.00567
- 6        1  12.2 East         46.8 No         3.19   0.335  0.285 0.00428
- 7        1  10   East         44.9 No         2.80   0.277  0.344 0.00416
- 8        1   9.4 West         47.1 Yes        2.19   0.236  0.461 0.00505
- 9        1   7.3 East         45.4 No         2.00   0.235  0.503 0.00580
-10        1   7.2 East         44.6 No         2.06   0.236  0.489 0.00558
-# ℹ 715 more rows
-# ℹ 3 more variables: .sigma &lt;dbl&gt;, .cooksd &lt;dbl&gt;, .std.resid &lt;dbl&gt;</code></pre>
+<pre><code># A tibble: 120 × 5
+    Deff FG_pct Conference .fitted .se.fit
+   &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;        &lt;dbl&gt;   &lt;dbl&gt;
+ 1 -26     45.2 East         -6.66   0.548
+ 2 -26     45.2 West         -7.40   0.599
+ 3 -25.0   45.2 East         -6.40   0.529
+ 4 -25.0   45.2 West         -7.14   0.579
+ 5 -24.0   45.2 East         -6.13   0.509
+ 6 -24.0   45.2 West         -6.88   0.559
+ 7 -23.0   45.2 East         -5.87   0.489
+ 8 -23.0   45.2 West         -6.61   0.539
+ 9 -22.1   45.2 East         -5.61   0.470
+10 -22.1   45.2 West         -6.35   0.520
+# ℹ 110 more rows</code></pre>
 </div>
 </div>
 <p>Next I need to convert the .fitted values to predicted probabilities. Currently they are showing the predicted log odds.</p>
@@ -945,22 +937,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">.predprob =</span> (<span class="fu">exp</span>(.fitted) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(.fitted))))</span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>aug_stats</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 725 × 13
-   Playoffs  Deff Conference FG_pct over100 .fitted .se.fit .resid    .hat
-      &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;fct&gt;     &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;
- 1        1  17.5 East         44.9 No         4.85   0.416  0.125 0.00133
- 2        1  17.5 West         48.3 No         3.68   0.410  0.223 0.00405
- 3        1  13.6 West         46.6 No         2.80   0.304  0.343 0.00497
- 4        1  13.2 West         48   Yes        3.13   0.301  0.293 0.00365
- 5        1  13.1 West         46.8 No         2.64   0.302  0.371 0.00567
- 6        1  12.2 East         46.8 No         3.19   0.335  0.285 0.00428
- 7        1  10   East         44.9 No         2.80   0.277  0.344 0.00416
- 8        1   9.4 West         47.1 Yes        2.19   0.236  0.461 0.00505
- 9        1   7.3 East         45.4 No         2.00   0.235  0.503 0.00580
-10        1   7.2 East         44.6 No         2.06   0.236  0.489 0.00558
-# ℹ 715 more rows
-# ℹ 4 more variables: .sigma &lt;dbl&gt;, .cooksd &lt;dbl&gt;, .std.resid &lt;dbl&gt;,
-#   .predprob &lt;dbl&gt;</code></pre>
+<pre><code># A tibble: 120 × 6
+    Deff FG_pct Conference .fitted .se.fit .predprob
+   &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;        &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;
+ 1 -26     45.2 East         -6.66   0.548  0.00128 
+ 2 -26     45.2 West         -7.40   0.599  0.000610
+ 3 -25.0   45.2 East         -6.40   0.529  0.00166 
+ 4 -25.0   45.2 West         -7.14   0.579  0.000793
+ 5 -24.0   45.2 East         -6.13   0.509  0.00216 
+ 6 -24.0   45.2 West         -6.88   0.559  0.00103 
+ 7 -23.0   45.2 East         -5.87   0.489  0.00281 
+ 8 -23.0   45.2 West         -6.61   0.539  0.00134 
+ 9 -22.1   45.2 East         -5.61   0.470  0.00365 
+10 -22.1   45.2 West         -6.35   0.520  0.00174 
+# ℹ 110 more rows</code></pre>
 </div>
 </div>
 <p>For my visualization I plan on using the geom_rug feature, so I need to make two separate data frames with teams that made the playoffs and teams that didn’t.</p>
@@ -981,37 +971,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>aug_stats<span class="sc">|&gt;</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> Deff,</span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> .predprob)) <span class="sc">+</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">colour =</span> over100),</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">linewidth =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_rug</span>(<span class="at">data =</span> stats_playoffs,</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">sides =</span> <span class="st">'t'</span>,</span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">alpha =</span> <span class="fl">0.3</span>,</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>           <span class="fu">aes</span>(<span class="at">y =</span> Playoffs)) <span class="sc">+</span></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_rug</span>(<span class="at">data =</span> stats_nplayoffs,</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">sides =</span> <span class="st">'b'</span>,</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">alpha =</span> <span class="fl">0.3</span>,</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>           <span class="fu">aes</span>(<span class="at">y =</span> Playoffs)) <span class="sc">+</span></span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Defensive Efficiency Rating"</span>,</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Predicted Probability"</span>,</span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">colour =</span> <span class="st">"Averaged</span><span class="sc">\n</span><span class="st">Over</span><span class="sc">\n</span><span class="st">100 Points"</span>,</span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Probability of an NBA Team to Make the Playoffs"</span>,</span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">caption =</span> <span class="st">"(based on data from NBA via data world from 1998 - 2022)"</span>) <span class="sc">+</span></span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>Conference) <span class="sc">+</span></span>
-<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>,),</span>
-<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
-<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">16</span>,</span>
-<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">hjust =</span> <span class="dv">0</span>),</span>
-<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">6</span>),</span>
-<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.spacing =</span> <span class="fu">unit</span>(<span class="dv">1</span>, <span class="st">'lines'</span>),</span>
-<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text.x =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>, </span>
-<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">face =</span> <span class="st">"bold"</span>),</span>
-<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">colour =</span> <span class="st">"black"</span>,</span>
-<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">fill =</span> <span class="st">"ivory"</span>),</span>
-<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"ivory"</span>),</span>
-<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"ivory"</span>),</span>
-<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">1.5</span>)) <span class="sc">+</span></span>
-<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks=</span><span class="fu">seq</span>(<span class="sc">-</span><span class="dv">30</span>, <span class="dv">40</span>, <span class="dv">10</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">colour =</span> Conference),</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">linewidth =</span> <span class="fl">1.2</span>,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_viridis_d</span>() <span class="sc">+</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_rug</span>(<span class="at">data =</span> stats_playoffs,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">sides =</span> <span class="st">'t'</span>,</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">alpha =</span> <span class="fl">0.3</span>,</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>           <span class="fu">aes</span>(<span class="at">y =</span> Playoffs)) <span class="sc">+</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_rug</span>(<span class="at">data =</span> stats_nplayoffs,</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">sides =</span> <span class="st">'b'</span>,</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>           <span class="at">alpha =</span> <span class="fl">0.3</span>,</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>           <span class="fu">aes</span>(<span class="at">y =</span> Playoffs)) <span class="sc">+</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Efficiency Recap Rating"</span>,</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Predicted Probability"</span>,</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">colour =</span> <span class="st">"Conference"</span>,</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Probability of an NBA Team to Make the Playoffs"</span>,</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>       <span class="at">caption =</span> <span class="st">"(based on data from NBA via data world from 1998 - 2022)"</span>) <span class="sc">+</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">10</span>,),</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">16</span>,</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">hjust =</span> <span class="dv">0</span>),</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">6</span>),</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.spacing =</span> <span class="fu">unit</span>(<span class="dv">1</span>, <span class="st">'lines'</span>),</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text.x =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>, </span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">colour =</span> <span class="st">"black"</span>,</span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">fill =</span> <span class="st">"ivory"</span>),</span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"ivory"</span>),</span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"ivory"</span>),</span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">1.5</span>)) <span class="sc">+</span></span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks=</span><span class="fu">seq</span>(<span class="sc">-</span><span class="dv">30</span>, <span class="dv">40</span>, <span class="dv">10</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <p><img src="blog-post-3_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid" width="672"></p>
 </div>
@@ -1019,7 +1010,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
-<p>This plot shows the differences in the probability of a team to make the playoffs dependent on their efficiency difference, their field goal percentage, their conference, and if they averaged over 100 points or not. What we can see here is that for a team in the Eastern conference, they need a lower efficiency difference to have an over .5 probability of making the playoffs. As well, a team’s probability of making the playoffs is higher if they averaged over 100 points.</p>
+<p>This plot shows the differences in the probability of a team to make the playoffs dependent on their efficiency recap rating, their median field goal percentage, and their conference. What we can see here is that for a team in the Eastern Conference, they need a lower efficiency recap rating to have an over .5 probability of making the playoffs. This can imply that typically over all the seasons this data has been collected, it is easier to make the playoffs in the Eastern Conference.</p>
 </section>
 <section id="connections-to-class" class="level1">
 <h1>Connections to Class</h1>

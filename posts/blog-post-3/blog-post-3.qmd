@@ -147,7 +147,7 @@ kable(head(team_stats_tidy))
 ```
 
 # Building a model
-I decided to use some of the metrics in the data set to predict whether a team would make the playoffs or not. I made a response variables Playoffs by using a condition of if a team played more than 82 games or not in season. I also made another qualitative variable in over100 which shows whether a team averaged over 100 points or not for that season. This makes the visualization aspect more fun to do.
+I decided to use some of the metrics in the data set to predict whether a team would make the playoffs or not. I made a response variables Playoffs by using a condition of if a team played more than 82 games or not in season.
 
 In order to make sure that this model isn't testing using data that knows the answer, we should get rid of both of the No and G variables. We also don't care about what team it is so we should get rid of the team factor.
 ```{r}
@@ -156,10 +156,10 @@ team_stats_tidy <-
   select(-(c("No","G", "Team")))
 ```
 
-As this is a blog for data visualization, I am only going to choose four predictors that were all found to be relatively significant in a model using all the predictors. Two of these are qualitative to demonstrate more visualization. The predictors are Deff, Conference, FG_pct, and over100. Shown below is my model with their coefficients and p values.
+As this is a blog for data visualization, I am only going to choose three predictors that were all found to be relatively significant in a model using all the predictors. One of these is qualitative to demonstrate more visualization. The predictors are Deff, Conference, and FG_pct. Shown below is my model with their coefficients and p values.
 
 ```{r}
-playoffs_mod <- glm(Playoffs ~ Deff + Conference + FG_pct + over100,
+playoffs_mod <- glm(Playoffs ~ Deff + Conference + FG_pct,
                     data = team_stats_tidy,
                     family = 'binomial')
 kable(tidy(playoffs_mod))
@@ -169,16 +169,16 @@ kable(tidy(playoffs_mod))
 grid <-
   team_stats_tidy |>
   data_grid(
-    Deff = seq_range(Deff, n = 100),
-    FG_pct = seq_range(FG_pct, n = 100),
+    Deff = seq_range(Deff, n = 60),
+    FG_pct = median(FG_pct),
     Conference = c("West", "East"),
-    over100 = c("Yes", "No")
   )
 ```
 
 ```{r}
 aug_stats <-
   augment(playoffs_mod,
+          newdata = grid,
           se_fit = TRUE)
 aug_stats
 ```
@@ -208,8 +208,10 @@ stats_nplayoffs <-
 aug_stats|>
   ggplot(aes(x = Deff,
              y = .predprob)) +
-  geom_line(aes(colour = over100),
-            linewidth = 1.2) +
+  geom_line(aes(colour = Conference),
+            linewidth = 1.2,
+            alpha = 0.8) +
+  scale_colour_viridis_d() +
   geom_rug(data = stats_playoffs,
            sides = 't',
            alpha = 0.3,
@@ -218,13 +220,12 @@ aug_stats|>
            sides = 'b',
            alpha = 0.3,
            aes(y = Playoffs)) +
-  labs(x = "Defensive Efficiency Rating",
+  labs(x = "Efficiency Recap Rating",
        y = "Predicted Probability",
-       colour = "Averaged\nOver\n100 Points",
+       colour = "Conference",
        title = "Probability of an NBA Team to Make the Playoffs",
        caption = "(based on data from NBA via data world from 1998 - 2022)") +
   theme_minimal() +
-  facet_wrap(~Conference) +
     theme(axis.title = element_text(size = 10,),
         strip.text = element_text(size = 12),
         plot.title = element_text(size = 16,
@@ -242,7 +243,7 @@ aug_stats|>
 ```
 
 # Conclusion
-This plot shows the differences in the probability of a team to make the playoffs dependent on their efficiency difference, their field goal percentage, their conference, and if they averaged over 100 points or not. What we can see here is that for a team in the Eastern conference, they need a lower efficiency difference to have an over .5 probability of making the playoffs. As well, a team's probability of making the playoffs is higher if they averaged over 100 points.
+This plot shows the differences in the probability of a team to make the playoffs dependent on their efficiency recap rating, their median field goal percentage, and their conference. What we can see here is that for a team in the Eastern Conference, they need a lower efficiency recap rating to have an over .5 probability of making the playoffs. This can imply that typically over all the seasons this data has been collected, it is easier to make the playoffs in the Eastern Conference.
 
 # Connections to Class
 In this blog, I used many tactics from class. One being the data visualization aspects of using faceting, and grouping. I put the geom_rug on as well and am visualizing my predicted probabilities for each observation. I also used our technique of creating a logistic regression model. 
