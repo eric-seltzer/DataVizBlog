@@ -1,0 +1,689 @@
+---
+title: "NBA Analysis Final Project"
+author: "Eric Seltzer"
+date: "2024-05-01"
+categories: [sports, code, analysis, web scraping, logistic regression]
+---
+# Introduction
+In this final project, I set out to create a shiny app that allows you to quickly look at an NBA player's statistics for a given season, see a breakdown of their shooting, and a model that predicts the probability of them making a shot based on the distance they take it from. There is no data set for this project, but it is done using an API package called nbastatR. According to the documentation, this is described as, "An interface for professional basketball data in R. Data sources include, but are not limited to: NBA Stats API, Basketball Insiders, Basketball-Reference, HoopsHype, and RealGM. Overtime additional data sources will be added."
+
+When you use the API package it does create data frames. The one I used for this project is done using the teams_shots() function. Below is an example of what is in the data frame.
+
+```{r}
+#| warning: false
+# These are all the packages that I used, the main one being nbastatR
+library(shiny)
+library(nbastatR)
+library(tidyverse)
+library(ggplot2)
+library(extrafont)
+library(cowplot)
+library(shinyWidgets)
+library(broom)
+library(modelr)
+library(DT)
+library(knitr)
+Sys.setenv(VROOM_CONNECTION_SIZE=500000)
+```
+
+```{r}
+#| warning: false
+library(nbastatR)
+teams <-
+  nba_teams() |>
+  filter(isNonNBATeam == 0) |>
+  filter(!is.na(colorsTeam))
+
+teams <-
+  teams_shots(teams = "Golden State Warriors",
+              seasons = 2024)
+teams <-
+  teams |>
+  filter(namePlayer == "Stephen Curry")
+
+player <-
+  teams |>
+  mutate(isShotMade = as.numeric(isShotMade))
+kable(head(player))
+```
+
+# Shot Chart
+From here, I had most of what I needed. But next I needed to make a short chart from which I got inspiration from a youtube tutorial. Below is the code to create the court, and add the makes and misses in.
+```{r}
+#| warning: false
+circle_points = function(center = c(0, 0),
+                         radius = 1,
+                         npoints = 360) {
+  angles = seq(0, 2 * pi, length.out = npoints)
+  return(data_frame(
+    x = center[1] + radius * cos(angles),
+    y = center[2] + radius * sin(angles)
+  ))
+}
+
+# Court Dimensions & lines
+width = 50
+height = 94 / 2
+key_height = 19
+inner_key_width = 12
+outer_key_width = 16
+backboard_width = 6
+backboard_offset = 4
+neck_length = 0.5
+hoop_radius = 0.75
+hoop_center_y = backboard_offset + neck_length + hoop_radius
+three_point_radius = 23.75
+three_point_side_radius = 22
+three_point_side_height = 14
+
+# Court themes
+court_themes = list(
+  light = list(
+    court = 'ivory',
+    lines = '#999999',
+    text = '#222222',
+    made = '#00bfc4',
+    missed = '#f8766d',
+    hex_border_size = 1,
+    hex_border_color = "ivory"
+  ),
+  dark = list(
+    court = '#000004',
+    lines = '#999999',
+    text = '#f0f0f0',
+    made = '#00bfc4',
+    missed = '#f8766d',
+    hex_border_size = 0,
+    hex_border_color = "#000000"
+  ),
+  ppt = list(
+    court = 'gray20',
+    lines = 'white',
+    text = '#f0f0f0',
+    made = '#00bfc4',
+    missed = '#f8766d',
+    hex_border_size = 0,
+    hex_border_color = "gray20"
+  )
+)
+
+# Function to create court based on given dimensions
+plot_court = function(court_theme = court_themes$light,
+                      use_short_three = FALSE) {
+  if (use_short_three) {
+    three_point_radius = 22
+    three_point_side_height = 0
+  }
+  
+  court_points = data_frame(
+    x = c(width / 2, width / 2,-width / 2,-width / 2, width / 2),
+    y = c(height, 0, 0, height, height),
+    desc = "perimeter"
+  )
+  
+  court_points = bind_rows(court_points , data_frame(
+    x = c(
+      outer_key_width / 2,
+      outer_key_width / 2,
+      -outer_key_width / 2,
+      -outer_key_width / 2
+    ),
+    y = c(0, key_height, key_height, 0),
+    desc = "outer_key"
+  ))
+  
+  court_points = bind_rows(court_points , data_frame(
+    x = c(-backboard_width / 2, backboard_width / 2),
+    y = c(backboard_offset, backboard_offset),
+    desc = "backboard"
+  ))
+  
+  court_points = bind_rows(court_points , data_frame(
+    x = c(0, 0),
+    y = c(backboard_offset, backboard_offset + neck_length),
+    desc = "neck"
+  ))
+  
+  foul_circle = circle_points(center = c(0, key_height), radius = inner_key_width / 2)
+  
+  foul_circle_top = filter(foul_circle, y > key_height) %>%
+    mutate(desc = "foul_circle_top")
+  
+  foul_circle_bottom = filter(foul_circle, y < key_height) %>%
+    mutate(
+      angle = atan((y - key_height) / x) * 180 / pi,
+      angle_group = floor((angle - 5.625) / 11.25),
+      desc = paste0("foul_circle_bottom_", angle_group)
+    ) %>%
+    filter(angle_group %% 2 == 0) %>%
+    select(x, y, desc)
+  
+  hoop = circle_points(center = c(0, hoop_center_y), radius = hoop_radius) %>%
+    mutate(desc = "hoop")
+  
+  restricted = circle_points(center = c(0, hoop_center_y), radius = 4) %>%
+    filter(y >= hoop_center_y) %>%
+    mutate(desc = "restricted")
+  
+  three_point_circle = circle_points(center = c(0, hoop_center_y), radius = three_point_radius) %>%
+    filter(y >= three_point_side_height, y >= hoop_center_y)
+  
+  three_point_line = data_frame(
+    x = c(
+      three_point_side_radius,
+      three_point_side_radius,
+      three_point_circle$x,
+      -three_point_side_radius,
+      -three_point_side_radius
+    ),
+    y = c(
+      0,
+      three_point_side_height,
+      three_point_circle$y,
+      three_point_side_height,
+      0
+    ),
+    desc = "three_point_line"
+  )
+  
+  court_points = bind_rows(
+    court_points,
+    foul_circle_top,
+    foul_circle_bottom,
+    hoop,
+    restricted,
+    three_point_line
+  )
+  
+  court_points <- court_points
+  
+  # Final plot creation
+  ggplot() +
+    geom_path(data = court_points,
+              aes(x = x, y = y, group = desc),
+              color = court_theme$lines) +
+    coord_fixed(ylim = c(0, 45), xlim = c(-25, 25)) +
+    theme_minimal(base_size = 22) +
+    theme(
+      text = element_text(color = court_theme$text),
+      plot.background = element_rect(fill = 'ivory', color = 'black'),
+      panel.background = element_rect(fill = court_theme$court, color = court_theme$court),
+      panel.grid = element_blank(),
+      panel.border = element_blank(),
+      axis.text = element_blank(),
+      axis.title = element_blank(),
+      axis.ticks = element_blank(),
+      legend.background = element_rect(fill = court_theme$court, color = court_theme$court),
+      legend.margin = margin(-1, 0, 0, 0, unit = "lines"),
+      legend.position = "bottom",
+      legend.key = element_blank(),
+      legend.text = element_text(size = rel(1.0))
+    )
+}
+teams <-
+  teams |>
+  mutate(x = as.numeric(as.character(locationX)) / 10,
+         y = as.numeric(as.character(locationY)) / 10 + hoop_center_y)
+```
+
+```{r}
+#| warning: false
+p1 <-
+  plot_court(court_themes$light,
+             use_short_three = T) +
+  geom_point(
+    data = teams,
+    aes(
+      x = x,
+      y = y,
+      color = isShotMade,
+      fill = isShotMade
+    ),
+    size = 3,
+    shape = 21,
+    stroke = .5
+  ) +
+  scale_color_manual(
+    values = c("green4", "red3"),
+    aesthetics = "color",
+    labels = c("Made", "Missed")
+  ) +
+  scale_fill_manual(
+    values = c("green2", "gray20"),
+    aesthetics = "fill",
+    labels = c("Made", "Missed")
+  ) +
+  scale_x_continuous(limits = c(-27.5, 27.5)) +
+  scale_y_continuous(limits = c(0, 45)) +
+  theme(
+    plot.title = element_text(
+      hjust = .5,
+      size = 22,
+      family = "Times New Roman",
+      face = "bold",
+      vjust = -4
+    ),
+    plot.subtitle = element_text(
+      hjust = .5,
+      size = 10,
+      family = "Times New Roman",
+      face = "bold",
+      vjust = -8
+    ),
+    legend.position = c(.5, .98),
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text = element_text(
+      hjust = .5,
+      size = 10,
+      family = "Times New Roman",
+      face = "bold",
+      colour = "black"
+    ),
+    plot.caption = element_text(
+      hjust = .5,
+      size = 6,
+      family = "Times New Roman",
+      face = "bold",
+      colour = "lightgrey",
+      vjust = 8
+    )
+  ) +
+  labs(title = "Stephen Curry Shot Chart")
+
+ggdraw(p1) + theme(plot.background = element_rect(fill = "ivory", color = NA))
+```
+
+# Logistic Regression Model
+Next, I chose to make a logistic regression model to predict the probability of a shot going in dependent on the distance it is being taken from. Below is the code for the model and for the visual of the results.
+```{r}
+mod <- glm(isShotMade ~ distanceShot,
+           data = player,
+           family = "binomial")
+
+grid <-
+  data_grid(player,
+            distanceShot = seq_range(distanceShot, n = 1000))
+
+aug <-
+  augment(mod,
+          newdata = grid,
+          se_fit = TRUE)
+
+aug <-
+  aug |>
+  mutate(.predprob = (exp(.fitted) / (1 + exp(.fitted)))) |>
+  mutate(min = .predprob - .se.fit,
+         max = .predprob + .se.fit)
+```
+
+```{r}
+made <-
+  player |>
+  filter(isShotMade == 1)
+
+missed <-
+  player |>
+  filter(isShotMade == 0)
+```
+
+```{r}
+ggplot(aug,
+       aes(x = distanceShot,
+           y = .predprob)) +
+  geom_line(linewidth = 1.2,
+            colour = "blue") +
+  geom_rug(data = made,
+           sides = "t",
+           alpha = 0.3,
+           aes(y = isShotMade)) +
+  geom_rug(data = missed,
+           sides = "b",
+           alpha = 0.3,
+           aes(y = isShotMade)) +
+  geom_ribbon(aes(ymin = min,
+                  ymax = max),
+              fill = "blue",
+              alpha = 0.2) +
+  scale_x_continuous(breaks = seq(0, 70, 20)) +
+  theme_minimal() +
+  labs(x = "Shot Distance",
+       y = "Predicted Probability",
+       title = "Stephen Curry Shot Make Probability Model") +
+  theme(
+    panel.background = element_rect(fill = "ivory"),
+    plot.background = element_rect(fill = "ivory"),
+    plot.title = element_text(family = "Times New Roman")
+  )
+```
+
+# Shiny App
+Now that I had static versions of the visualizations I wanted, I wanted to add the ability for a user to interact. To do this, I used a shiny app with lots of interactivity. This would allow the user to pick a season that they wanted to look at as well as a player. This shiny app also uses some of the other functions in the nbastatR package so we can also look at their season averages for the selected season. Below is all the code used to add this functionality to the shiny app, as well as a link to the shiny app itself.
+
+```{r}
+teams <-
+  nba_teams() |>
+  filter(isNonNBATeam == 0) |>
+  filter(!is.na(colorsTeam)) |>
+  mutate(nameTeam = factor(nameTeam)) |>
+  pull(nameTeam) |>
+  levels()
+
+ui <- fluidPage(
+  theme = bslib::bs_theme(bootswatch = "sandstone"),
+  setBackgroundColor(
+    color = "ivory",
+    gradient = c("linear", "radial")
+  ),
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput(
+        "season",
+        "Choose a Season (2024 -> 23-24)",
+        min = 2000,
+        max = 2024,
+        value = 2024,
+        sep = ""
+      ),
+      selectInput("team_choices",
+                  "Choose a NBA Team",
+                  choices = teams),
+      selectInput("player",
+                  "Choose a Player",
+                  choices = NULL),
+      actionButton("button",
+                   "Update")
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel(
+          "Shot Chart and Stats",
+          plotOutput("player_plot"),
+          DT::dataTableOutput("shot_metrics"),
+          DT::dataTableOutput("zone_type"),
+        ),
+        tabPanel("Shot Probability",
+                 plotOutput("log_model")
+        )
+      )
+    )
+  ),
+)
+
+server <- function(input, output, session) {
+  team_react <-
+    reactive({
+      teams_shots(teams = input$team_choices,
+                  seasons = input$season)
+    })
+  
+  observeEvent(input$team_choices, {
+    player_choices <-
+      team_react() |>
+      filter(nameTeam == input$team_choices) |>
+      mutate(namePlayer = factor(namePlayer)) |>
+      pull(namePlayer) |>
+      levels()
+    
+    updateSelectInput(inputId = "player",
+                      choices = player_choices)
+  })
+  
+  observeEvent(input$season, {
+    player_choices <-
+      team_react() |>
+      filter(nameTeam == input$team_choices) |>
+      mutate(namePlayer = factor(namePlayer)) |>
+      pull(namePlayer) |>
+      levels()
+    
+    updateSelectInput(inputId = "player",
+                      choices = player_choices)
+  })
+  
+  player_react <-
+    eventReactive(input$button, {
+      team_react() |>
+        filter(namePlayer == input$player) |>
+        mutate(
+          x = as.numeric(as.character(locationX)) / 10,
+          y = as.numeric(as.character(locationY)) / 10 + hoop_center_y
+        )
+    })
+  
+  model_react <-
+    eventReactive(input$button, {
+      team_react() |>
+        filter(namePlayer == input$player)
+    })
+  
+  model <-
+    reactive({
+      mod <- glm(isShotMade ~ distanceShot,
+          data = model_react(),
+          family = "binomial")
+      
+      grid <-
+        data_grid(model_react(),
+                  distanceShot = seq_range(distanceShot, n = 1000)
+        )
+      
+      aug <-
+        augment(mod,
+                newdata = grid,
+                se_fit = TRUE)
+      
+      aug <-
+        aug |>
+        mutate(.predprob = (exp(.fitted) / (1 + exp(.fitted)))) |>
+        mutate(min = .predprob - .se.fit,
+               max = .predprob + .se.fit)
+        
+    })
+  
+  output$player_plot <-
+    renderPlot({
+      
+      p1 <-
+        plot_court(court_themes$light,
+                   use_short_three = T) +
+        geom_point(
+          data = player_react(),
+          aes(
+            x = x,
+            y = y,
+            color = player_react()$isShotMade,
+            fill = player_react()$isShotMade
+          ),
+          size = 3,
+          shape = 21,
+          stroke = .5
+        ) +
+        scale_color_manual(
+          values = c("green4", "red3"),
+          aesthetics = "color",
+          labels = c("Made", "Missed")
+        ) +
+        scale_fill_manual(
+          values = c("green2", "gray20"),
+          aesthetics = "fill",
+          labels = c("Made", "Missed")
+        ) +
+        scale_x_continuous(limits = c(-27.5, 27.5)) +
+        scale_y_continuous(limits = c(0, 45)) +
+        theme(
+          plot.title = element_text(
+            hjust = .5,
+            size = 22,
+            family = "Times New Roman",
+            face = "bold",
+            vjust = -4
+          ),
+          plot.subtitle = element_text(
+            hjust = .5,
+            size = 10,
+            family = "Times New Roman",
+            face = "bold",
+            vjust = -8
+          ),
+          legend.position = c(.5, .98),
+          legend.direction = "horizontal",
+          legend.title = element_blank(),
+          legend.text = element_text(
+            hjust = .5,
+            size = 10,
+            family = "Times New Roman",
+            face = "bold",
+            colour = "black"
+          ),
+          plot.caption = element_text(
+            hjust = .5,
+            size = 6,
+            family = "Times New Roman",
+            face = "bold",
+            colour = "lightgrey",
+            vjust = 8
+          )
+        ) +
+        labs(title = glue::glue(input$player, " Shot Chart"))
+      
+      ggdraw(p1) + theme(plot.background = element_rect(fill = "ivory", color = NA))
+    })
+
+  output$log_model <-
+    renderPlot({
+      
+      made <-
+        player_react() |>
+        filter(isShotMade == 1)
+      
+      missed <-
+        player_react() |>
+        filter(isShotMade == 0)
+
+      ggplot(model(),
+             aes(x = distanceShot,
+                 y = .predprob)) +
+        geom_line(linewidth = 1.2,
+                  colour = "blue") +
+        geom_rug(data = made,
+                 sides = "t",
+                 alpha = 0.75,
+                 aes(y = as.numeric(isShotMade))) +
+        geom_rug(data = missed,
+                 sides = "b",
+                 alpha = 0.75,
+                 aes(y = as.numeric(isShotMade))) +
+        geom_ribbon(aes(ymin = min,
+                        ymax = max),
+                    fill = "blue",
+                    alpha = 0.2) +
+        theme_minimal() +
+        scale_x_continuous(breaks = seq(0, 70, 10)) +
+        labs(x = "Shot Distance",
+             y = "Predicted Probability",
+             title = glue::glue(input$player, " Shot Make Probability Model")) +
+        theme(
+          panel.background = element_rect(fill = "ivory"),
+          plot.background = element_rect(fill = "ivory"),
+          plot.title = element_text(family = "Times New Roman")
+        )
+    })
+  
+  zone <-
+    eventReactive(input$button, {
+      player_react() |>
+        group_by(zoneRange) |>
+        summarise(`Percent of Shots Made` = round(mean(isShotMade), 2),
+                  `Number of Shots Attempted` = n()) |>
+        filter(`Number of Shots Attempted` >= 10) |>
+        arrange(desc(`Percent of Shots Made`)) |>
+        rename("Distance" = zoneRange)
+    })
+  
+  metrics <-
+    eventReactive(input$button, {
+      metrics <- bref_players_stats(seasons = input$season,
+                                    tables = "per_game") |>
+        filter(namePlayer == input$player) |>
+        select(
+          -c(
+            "slugSeason",
+            "groupPosition",
+            "yearSeason",
+            "isSeasonCurrent",
+            "slugPlayerSeason",
+            "slugPlayerBREF",
+            "isHOFPlayer",
+            "slugTeamsBREF",
+            "pctFG2",
+            "fg2mPerGame",
+            "fg2aPerGame",
+            "idPlayerNBA",
+            "urlPlayerThumbnail",
+            "urlPlayerHeadshot",
+            "urlPlayerPhoto",
+            "urlPlayerStats",
+            "urlPlayerActionPhoto",
+            "countTeamsPlayerSeasonPerGame",
+            "urlPlayerBREF"
+          )
+        ) |>
+        rename("Name" = namePlayer,
+               "Position" = slugPosition,
+               "Age" = agePlayer,
+               "Team" = slugTeamBREF,
+               "G" = countGames,
+               "GS" = countGamesStarted,
+               "FG%"= pctFG,
+               "3P%" = pctFG3,
+               "eFG%" = pctEFG,
+               "FT%" = pctFT,
+               "MP" = minutesPerGame,
+               "FGM" = fgmPerGame,
+               "FGA" = fgaPerGame,
+               "3P" = fg3mPerGame,
+               "3PA" = fg3aPerGame,
+               "FT" = ftmPerGame,
+               "FTA" = ftaPerGame,
+               "ORB" = orbPerGame,
+               "DRB" = drbPerGame,
+               "TRB" = trbPerGame,
+               "AST" = astPerGame,
+               "STL" = stlPerGame,
+               "BLK" = blkPerGame,
+               "TOV" = tovPerGame,
+               "PF" = pfPerGame,
+               "PTS" = ptsPerGame) |>
+        select(-c("ORB", "DRB")) |>
+        mutate(Age = as.integer(Age),
+               G = as.integer(G),
+               GS = as.integer(GS))
+    })
+  
+  output$shot_metrics <-
+    DT::renderDataTable(
+      metrics(),
+      options = list(
+        scrollX = TRUE,
+        searching = FALSE,
+        paging = FALSE),
+      rownames = FALSE
+    )
+  
+  output$zone_type <-
+    DT::renderDataTable(
+      zone(),
+      options = list(
+        scrollX = TRUE,
+        searching = FALSE,
+        paging = FALSE
+      ),
+      rownames = FALSE,
+      caption = "Minimum 10 Shots Attempted"
+    )
+}
+
+shinyApp(ui, server)
+```
+
